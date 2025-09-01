@@ -1,0 +1,93 @@
+javascript:(function(){
+  // Pi² Auto-Clicker - Modified Speed and Clicks
+  console.log('🚀 Pi² Auto-Clicker Starting...');
+  
+  let isActive = false;
+  let clickCount = 0;
+  let startTime = 0;
+  let lastClickTime = 0;
+  let sessionClicks = 0;
+  let currentTPS = 0;
+  let gameStarted = false;
+  let targetTPS = 14;   // 🔥 Reduced speed (was 20, now 14)
+  
+  const config = {
+    maxClicks: 89,          // 🔥 Changed total clicks (was 96, now 89)
+    peakTPS: 14,            // 🔥 Reduced from 20 → 14
+    normalTPS: 12,          // 🔥 Reduced from 18 → 12
+    peakDuration: 50,       
+    minDelay: 71,           // Adjusted delay for ~14 TPS
+    normalDelay: 83,        // Adjusted delay for ~12 TPS
+    warningClicks: 80,      
+    pauseAfterLimit: 12000, 
+    gameStartDelay: 2000,   
+    restartDelay: 3000      
+  };
+  
+  // Game starter
+  function startGame() {
+    console.log('🎮 Game start sequence initiated...');
+    gameStarted = true;
+    setTimeout(() => {
+      isActive = true;
+      clickCount = 0;
+      sessionClicks = 0;
+      startTime = Date.now();
+      lastClickTime = Date.now();
+      clickLoop();
+    }, config.gameStartDelay);
+  }
+  
+  // Click loop
+  function clickLoop() {
+    if (!isActive) return;
+    
+    const now = Date.now();
+    const timeDiff = (now - lastClickTime) / 1000;
+    lastClickTime = now;
+    
+    currentTPS = (1 / timeDiff).toFixed(1);
+    
+    if (sessionClicks >= config.maxClicks) {
+      console.warn(`⚠️ Limit reached: ${config.maxClicks} clicks`);
+      isActive = false;
+      setTimeout(() => {
+        console.log('♻️ Restarting...');
+        startGame();
+      }, config.pauseAfterLimit);
+      return;
+    }
+    
+    // Perform click
+    window.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    }));
+    
+    clickCount++;
+    sessionClicks++;
+    
+    if (sessionClicks % 10 === 0) {
+      const elapsed = (now - startTime) / 1000;
+      const avgTPS = (clickCount / elapsed).toFixed(2);
+      console.log(`🖱️ Clicks: ${sessionClicks}/${config.maxClicks} | Current TPS: ${currentTPS} | Avg TPS: ${avgTPS}`);
+    }
+    
+    if (sessionClicks >= config.warningClicks) {
+      console.warn(`⚠️ Approaching limit: ${sessionClicks}/${config.maxClicks}`);
+    }
+    
+    // Alternate TPS strategy
+    const inPeak = (sessionClicks % config.peakDuration) < (config.peakDuration / 2);
+    targetTPS = inPeak ? config.peakTPS : config.normalTPS;
+    const delay = inPeak ? config.minDelay : config.normalDelay;
+    
+    setTimeout(clickLoop, delay);
+  }
+  
+  // Initialize
+  if (!gameStarted) {
+    startGame();
+  }
+})();
